@@ -7,7 +7,7 @@
 ## 运行
 
 - Windows：从 Releases 下载 Windows ZIP，解压整个目录，运行 `HKVSZombie.exe`。规则运行组件已随包附带，不需要安装 Node 或 Godot。
-- Web：下载 Web ZIP，解压并通过 HTTP 服务或 GameHub 托管 `index.html`。本项目使用 Godot 的单线程 Web 模板，并在导出后关闭仅针对线程版的安全上下文检查，因此兼容当前 GameHub HTTP 入口；不要直接双击 HTML。开发预览执行 `npm run serve`，打开 `http://127.0.0.1:8074`。
+- Web：下载 Web ZIP，解压并通过 HTTP 服务或 GameHub 托管 `index.html`。本项目使用 Godot 的单线程 Web 模板，并在导出后关闭仅针对线程版的安全上下文检查，同时把引擎资源固定到当前版本目录，因此兼容当前 GameHub HTTP 入口；不要直接双击 HTML。开发预览执行 `npm run serve`，打开 `http://127.0.0.1:8074`。
 - 开发：Godot 4.7.2 导入本目录 `project.godot`，按 F6/F5 运行。需要 Node 22+ 在 PATH 中，也可以设置 `HKVZ_NODE` 为 Node 可执行文件的绝对路径。
 
 ## 玩法与内容

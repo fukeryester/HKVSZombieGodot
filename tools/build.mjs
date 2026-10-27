@@ -17,8 +17,13 @@ for(const platform of target==='all'?['windows','web']:[target]){
    const license=path.join(path.dirname(process.execPath),'LICENSE');if(fs.existsSync(license))fs.copyFileSync(license,path.join(out,'licenses/Node-LICENSE.txt'));
  }else{
    const scripts=['platform.js',...['gamehub-room','gamehub-stats','gamehub-matches'].map(n=>'vendor/'+n+'.js'),...CORE.map(n=>'core/'+n+'.js'),'host.js','browser.js'];
-   const html=fs.readFileSync(path.join(out,'index.html'),'utf8');
+   let html=fs.readFileSync(path.join(out,'index.html'),'utf8');
    const loader='<script>window.GAMEHUB_GAME_ID="4405e915c069c808";</script>\n'+scripts.map(file=>`<script src="runtime/${file}"></script>`).join('\n');
+   // GameHub serves each version below /g/<id>/v/<version>/, while its
+   // wrapper can make relative Godot assets resolve at the site root. Rewrite
+   // only bare engine assets against the actual page directory.
+   const assetBase='<script>(function(){const base=new URL("./",window.location.href);const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){if(typeof input==="string" && /^(index\\.(pck|wasm|png|audio\\.|js)$)/.test(input))input=new URL(input,base).href;return nativeFetch(input,init);};})();</script>';
+   html=html.replace('<script src="index.js"></script>',assetBase+'\n<script src="index.js"></script>');
    fs.writeFileSync(path.join(out,'index.html'),html.replace('</head>',loader+'\n</head>'));
    // Godot 4.7's loader checks Secure Context unconditionally, even for the
    // explicitly single-threaded Web template. GameHub's static endpoint is
