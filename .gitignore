@@ -4,6 +4,7 @@ dist/
 artifacts/
 tools/cache/
 tools/local.json
+deployment-godot.json
 *.tmp
 .env*
 !.env.example

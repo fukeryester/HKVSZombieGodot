@@ -8,6 +8,7 @@
     "prepare": "node tools/prepare.mjs",
     "build": "node tools/build.mjs",
     "serve": "node tools/serve.mjs",
+    "deploy:gamehub": "node tools/deploy-gamehub.mjs",
     "test:web": "node tests/web.mjs"
   },
   "devDependencies": {"playwright": "^1.56.1"}
