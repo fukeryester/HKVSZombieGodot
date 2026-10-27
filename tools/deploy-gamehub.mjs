@@ -32,7 +32,7 @@ if(!exact.length){
   form.set('description','香港夜景像素风横版拔河 RTS。采集食物、木头、黄金和石头，扩建兵营与城镇中心，调遣农民、守住基地并召唤战争巨兽。');
   form.set('engine','html');
   form.set('published','1');
-  form.set('tags','strategy,multiplayer,action,horror,godot,pixel');
+  form.set('tags','strategy,multiplayer,action,horror');
   const cover=path.join(root,'docs/screenshots/menu.png');
   if(fs.existsSync(cover))form.set('cover',new Blob([fs.readFileSync(cover)]),'menu.png');
 }
