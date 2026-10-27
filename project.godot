@@ -1,0 +1,26 @@
+config_version=5
+
+[application]
+config/name="香港大战僵尸2：生死存亡 · 像素重制"
+config/description="Godot 2D 像素战场 · 12 文明 · 84 兵种 · 双平台"
+config/version="1.0.0"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[autoload]
+Bridge="*res://scripts/RuntimeBridge.gd"
+
+[display]
+window/size/viewport_width=1440
+window/size/viewport_height=900
+window/size/window_width_override=1280
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+window/handheld/orientation=0
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.075,0.065,0.085,1)

@@ -1,0 +1,9 @@
+.godot/
+node_modules/
+dist/
+artifacts/
+tools/cache/
+tools/local.json
+*.tmp
+.env*
+!.env.example

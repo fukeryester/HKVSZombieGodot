@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "stats": [
+    {
+      "id": "matches_total",
+      "display_name": "总对局",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "wins_total",
+      "display_name": "总胜利",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "losses_total",
+      "display_name": "总失败",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "kills_total",
+      "display_name": "累计击杀",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 10000,
+      "aggregate": true
+    },
+    {
+      "id": "units_built_total",
+      "display_name": "累计部队",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 2000,
+      "aggregate": true
+    },
+    {
+      "id": "workers_trained",
+      "display_name": "训练农民",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 500,
+      "aggregate": true
+    },
+    {
+      "id": "resources_gathered",
+      "display_name": "采集资源",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 1000000,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_hk_finance",
+      "display_name": "中环金融中心出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_hk_slum",
+      "display_name": "深水埗贫民窟出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_hk_police",
+      "display_name": "湾仔差馆出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_zom_classic",
+      "display_name": "末日尸潮出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_zom_ghost",
+      "display_name": "港式怪谈出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_zom_bio",
+      "display_name": "病毒实验体出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_hk_university",
+      "display_name": "香港大学城出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_hk_wild",
+      "display_name": "港氏野人帮出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_hk_gang",
+      "display_name": "香港黑帮出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_zom_robot",
+      "display_name": "AI机器人僵尸出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_zom_necro",
+      "display_name": "尸变体出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "civ_used_zom_asym",
+      "display_name": "非对称怪物出场",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "increment_only": true,
+      "max_delta": 5,
+      "aggregate": true
+    },
+    {
+      "id": "rank_score",
+      "display_name": "排位胜点",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 99999,
+      "max_delta": 80
+    },
+    {
+      "id": "rank_peak",
+      "display_name": "最高胜点",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 99999,
+      "max_delta": 80
+    }
+  ],
+  "achievements": [
+    {
+      "id": "first_win",
+      "name": "破晓",
+      "description": "取得首场胜利。",
+      "hidden": false,
+      "bind_stat": null,
+      "unlock_at": null
+    },
+    {
+      "id": "age_four",
+      "name": "终极时代",
+      "description": "升级到时代 IV。",
+      "hidden": false,
+      "bind_stat": null,
+      "unlock_at": null
+    },
+    {
+      "id": "first_castle",
+      "name": "堡垒屹立",
+      "description": "完成一座防御城堡。",
+      "hidden": false,
+      "bind_stat": null,
+      "unlock_at": null
+    },
+    {
+      "id": "resource_master",
+      "name": "后方英雄",
+      "description": "单局采集至少5000资源。",
+      "hidden": false,
+      "bind_stat": null,
+      "unlock_at": null
+    }
+  ],
+  "leaderboards": [
+    {
+      "id": "board_rank",
+      "name": "排位荣耀榜",
+      "sort": "desc",
+      "keep": "last",
+      "display": "number"
+    },
+    {
+      "id": "board_kills",
+      "name": "单局击杀榜",
+      "sort": "desc",
+      "keep": "best",
+      "display": "number"
+    }
+  ],
+  "displays": [
+    {
+      "id": "rank",
+      "type": "leaderboard",
+      "title": "排位荣耀",
+      "board_id": "board_rank",
+      "limit": 20
+    },
+    {
+      "id": "kills",
+      "type": "leaderboard",
+      "title": "单局击杀",
+      "board_id": "board_kills",
+      "limit": 10
+    },
+    {
+      "id": "matches",
+      "type": "number",
+      "title": "累计作战",
+      "source": {
+        "type": "stat_global",
+        "stat_id": "matches_total",
+        "agg": "sum"
+      },
+      "format": "integer"
+    },
+    {
+      "id": "resources",
+      "type": "number",
+      "title": "全服采集资源",
+      "source": {
+        "type": "stat_global",
+        "stat_id": "resources_gathered",
+        "agg": "sum"
+      },
+      "format": "integer"
+    },
+    {
+      "id": "achievements",
+      "type": "achievement_rates",
+      "title": "城市记忆",
+      "ids": []
+    }
+  ]
+}

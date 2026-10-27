@@ -1,0 +1,12 @@
+# Preserve exact upstream JavaScript bytes across clones on Windows.
+* text=auto eol=lf
+runtime/core/* -text
+runtime/vendor/* -text
+runtime/core/* whitespace=-trailing-space,cr-at-eol
+runtime/vendor/* whitespace=-trailing-space,cr-at-eol
+*.png binary
+*.otf binary
+*.gd text eol=lf
+*.mjs text eol=lf
+*.md text eol=lf
+*.json text eol=lf

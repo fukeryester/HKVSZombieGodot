@@ -1,0 +1,23 @@
+{
+  "source": "fukeryester/HKVSZombie2",
+  "commit": "ff53022",
+  "files": {
+    "civs.js": "9879eadf2c3b7d25bec0e4f74d34e8a469f5fa9af6a96042a6d3cb5a97d2c1b1",
+    "expansion.js": "0a13fbd372bb6cfcf26aacd9596edd38ece38914672a1edd6a032e2cfdfbfa5d",
+    "balance.js": "c1f9a7cd5397edae291099baed7d9dcae3bab599674b8588f99d4da90309aa37",
+    "factions.js": "c0d865f053d457052021e2256f06a612b6f0cd57d5651ff2c2e9d6b3c7259a91",
+    "war.js": "6d443240f9dc507f8fb02170cdf36b83e77b4461dbf60bbe8dd762e8ad50dc62",
+    "economy.js": "77a0e51c536fa23642036ec448a00b6af6943c7c542fb0b2e5162992ce383722",
+    "sim.js": "34612890ce35513bbf48fcf9944bee949fc8b2f3959d7394369555db649fab3d",
+    "ai.js": "9f24fb9d62c69b17576669290c3b87cb9a653dda57d2dea9f77d53ae275566b9",
+    "replay-core.js": "7240b79bf40ece844758ded782783b761ea5e4db2b59be75448b7b4ce816e623",
+    "network.js": "4feeb049a798dab0df8a947071b44be939a57fb3be4ec9b04c50d854577f34d4",
+    "progression.js": "796fcd495cb1c04ae74ba0bd2e43a393031f5fb8e433b6d9c9cb0d0d4d986881",
+    "replay-store.js": "c0e73a6c0759d9bc79eb3cc0b7a3fb35a5a10a7b66029ca8a7de146266f3284a"
+  },
+  "vendorFiles": {
+    "gamehub-matches.js": "1e24bfbb6d153e6550100e594470a6c3d0493948789a172fbb1216f3c6d7e24b",
+    "gamehub-room.js": "82b8e3683348e95ac50f93a172ffc4247020f3cac779e8dcd87b15956456e78a",
+    "gamehub-stats.js": "46748f76e9199c4bec6bef0af44c664859d7bc9a7c53e827ae3f516c760292c5"
+  }
+}
