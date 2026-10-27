@@ -23,7 +23,13 @@ for(const platform of target==='all'?['windows','web']:[target]){
    // wrapper can make relative Godot assets resolve at the site root. Rewrite
    // only bare engine assets against the actual page directory.
    const assetBase='<script>(function(){const base=new URL("./",window.location.href);const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){if(typeof input==="string" && /^(index\\.(pck|wasm|png|audio\\.|js)$)/.test(input))input=new URL(input,base).href;return nativeFetch(input,init);};})();</script>';
-   html=html.replace('<script src="index.js"></script>',assetBase+'\n<script src="index.js"></script>');
+   // Keep the page usable on GameHub's plain HTTP endpoint.  In particular,
+   // some Chromium builds expose AudioContext.prototype.audioWorklet while the
+   // actual context has no addModule() in an insecure context.  Godot's web
+   // template used to call that method unconditionally during audio startup.
+   // The loader patches below select its ScriptProcessor fallback instead.
+   const browserCompat='<script>(function(){window.HKVSWebCompat={http:location.protocol!=="https:",audioWorklet:function(){try{const C=window.AudioContext||window.webkitAudioContext;const p=C&&C.prototype;return !!(p&&p.audioWorklet&&typeof p.audioWorklet.addModule==="function"&&typeof window.AudioWorkletNode==="function")}catch(_){return false}},webgl:function(){try{const c=document.createElement("canvas");return !!(c.getContext("webgl2")||c.getContext("webgl"))}catch(_){return false}},storage:function(){try{const k="hkvs_probe";localStorage.setItem(k,"1");localStorage.removeItem(k);return true}catch(_){return false}}};})();</script>';
+   html=html.replace('<script src="index.js"></script>',assetBase+'\n'+browserCompat+'\n<script src="index.js"></script>');
    fs.writeFileSync(path.join(out,'index.html'),html.replace('</head>',loader+'\n</head>'));
    // Godot 4.7's loader checks Secure Context unconditionally, even for the
    // explicitly single-threaded Web template. GameHub's static endpoint is
@@ -34,6 +40,18 @@ for(const platform of target==='all'?['windows','web']:[target]){
    const secureCheck='if (!Features.isSecureContext()) {';
    if(!loaderSource.includes(secureCheck))throw Error('Godot loader secure-context check changed; inspect before patching.');
    loaderSource=loaderSource.replace(secureCheck,'if (supportsThreads && !Features.isSecureContext()) {');
+   const audioFeature="return 'AudioContext' in window && 'audioWorklet' in AudioContext.prototype;";
+   if(!loaderSource.includes(audioFeature))throw Error('Godot loader audio feature check changed; inspect before patching.');
+   loaderSource=loaderSource.replace(audioFeature,'return !!(window.HKVSWebCompat ? window.HKVSWebCompat.audioWorklet() : (\'AudioContext\' in window && \'audioWorklet\' in AudioContext.prototype && typeof AudioContext.prototype.audioWorklet.addModule === \'function\' && typeof window.AudioWorkletNode === \'function\'));');
+   const audioHasWorklet='function _godot_audio_has_worklet(){return GodotAudio.ctx&&GodotAudio.ctx.audioWorklet?1:0}';
+   if(!loaderSource.includes(audioHasWorklet))throw Error('Godot audio worklet probe changed; inspect before patching.');
+   loaderSource=loaderSource.replace(audioHasWorklet,'function _godot_audio_has_worklet(){return GodotAudio.ctx&&GodotAudio.ctx.audioWorklet&&typeof GodotAudio.ctx.audioWorklet.addModule===\'function\'&&typeof AudioWorkletNode===\'function\'?1:0}');
+   const positionWorklet='GodotAudio.audioPositionWorkletPromise=ctx.audioWorklet.addModule(path);';
+   if(!loaderSource.includes(positionWorklet))throw Error('Godot position worklet call changed; inspect before patching.');
+   loaderSource=loaderSource.replace(positionWorklet,'GodotAudio.audioPositionWorkletPromise=ctx.audioWorklet&&typeof ctx.audioWorklet.addModule===\'function\'?ctx.audioWorklet.addModule(path):Promise.resolve();');
+   const mainWorklet='GodotAudioWorklet.promise=GodotAudio.ctx.audioWorklet.addModule(path).then(function(){';
+   if(!loaderSource.includes(mainWorklet))throw Error('Godot main worklet call changed; inspect before patching.');
+   loaderSource=loaderSource.replace(mainWorklet,'GodotAudioWorklet.promise=(GodotAudio.ctx.audioWorklet&&typeof GodotAudio.ctx.audioWorklet.addModule===\'function\'?GodotAudio.ctx.audioWorklet.addModule(path):Promise.reject(new Error("AudioWorklet unavailable"))).then(function(){');
    fs.writeFileSync(loaderPath,loaderSource);
  }
  console.log('Built '+platform+': '+out);
