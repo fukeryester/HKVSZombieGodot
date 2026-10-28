@@ -10,6 +10,8 @@ async function asyncCall(method,args={}){let r=await call(method,args);while(r.p
 try{
  await page.goto(url);await page.waitForFunction(()=>window.GodotGame);await page.waitForTimeout(4000);
  await page.screenshot({path:'artifacts/web-menu.png'});
+ // The dedicated title screen precedes civilization setup.
+ await page.mouse.click(720,500);await page.waitForTimeout(300);
  // Click actual Godot controls, then use input shortcuts and inspect authoritative state.
  await page.mouse.click(1150,460);await page.waitForFunction(()=>GodotGame.view().screen==='play');
  await page.waitForTimeout(400);
@@ -22,7 +24,7 @@ try{
  if(!(await view()).state.units.some(u=>u.beast))await call('action',{op:'summon_beast',kind:'zeppelin'});
  await page.keyboard.press('Escape');await page.waitForTimeout(250);assert.ok((await view()).state.units.some(u=>u.beast==='zeppelin'));
  // Web JavaScript and bundled desktop V8 must produce identical fixed-tick state.
- await call('start',{size:4,civ:'zom_asym',side:'zom',seed:908});await call('pause');
+ await page.evaluate(()=>{const q=(method,args={})=>JSON.parse(GodotGame.request(JSON.stringify({method,args})));q('start',{size:4,civ:'zom_asym',side:'zom',seed:908});q('pause');});
  const oracle=createRuntime({gameId:''});const request=(method,args={})=>JSON.parse(oracle.GodotGame.request(JSON.stringify({method,args})));
  request('start',{size:4,civ:'zom_asym',side:'zom',seed:908});request('pause');
  // Run synchronously in one browser task so Godot's rendering timer cannot interleave ticks.

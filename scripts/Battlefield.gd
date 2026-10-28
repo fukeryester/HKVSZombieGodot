@@ -9,6 +9,10 @@ var catalog: Dictionary={}
 var _background: Texture2D
 var _last_positions: Dictionary={}
 var _moving: Dictionary={}
+var _previous_positions: Dictionary={}
+var _snapshot_age:=0.0
+var _snapshot_interval:=1.0/30.0
+var _stride: Dictionary={}
 var _shake:=0.0
 var _last_event:=0
 var _render_time:=0.0
@@ -22,26 +26,43 @@ func _ready() -> void:
 		_background=load("res://assets/backgrounds/hong_kong_night.png")
 
 func update_world(next_state: Dictionary,local_seat: int,db: Dictionary) -> void:
+	_snapshot_interval=clampf(_snapshot_age,1.0/120.0,.1)
+	_snapshot_age=0.0
+	_previous_positions=_last_positions.duplicate()
+	var alive: Dictionary={}
 	for u in next_state.get("units",[]):
 		var id: int=int(u.id)
-		if _last_positions.has(id): _moving[id]=absf(float(u.x)-float(_last_positions[id]))>0.01
+		alive[id]=true
+		if _last_positions.has(id):
+			var travelled:=absf(float(u.x)-float(_last_positions[id]))
+			_moving[id]=travelled>0.01
+			_stride[id]=float(_stride.get(id,0))+travelled
 		_last_positions[id]=u.x
+	for id in _last_positions.keys():
+		if not alive.has(id):
+			_last_positions.erase(id);_previous_positions.erase(id);_moving.erase(id);_stride.erase(id)
 	state=next_state;seat=local_seat;catalog=db
 	for event in state.get("_events",[]):
 		if float(state.time)-float(event.time)<.1 and event.get("type","") in ["war_summon","base_destroyed","war_cyst_burst"]: _shake=1.0
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	_snapshot_age+=delta
 	_render_time+=delta
 	_shake=maxf(0,_shake-delta*1.6)
 	if not state.is_empty(): queue_redraw()
 
 func point(x: float,row: int=0,dy: float=0) -> Vector2:
 	var lanes:=maxi(1,int(state.get("players",[]).size()/2))
-	return Vector2(18+x/1800.0*(size.x-36),size.y*(0.69+0.21*float(row)/maxi(1,lanes-1))+dy)
+	var depth:=0.82+0.18*float(row)/maxi(1,lanes-1)
+	return Vector2(size.x*.5+(x-900)/1800.0*(size.x-36)*depth,size.y*(0.69+0.21*float(row)/maxi(1,lanes-1))+dy)
+
+func _visual_scale(base: Vector2) -> float:
+	return clampf(size.x/1800.0,.25,1.2)*lerpf(.82,1.0,clampf((base.y/size.y-.69)/.21,0,1))
 
 func _sprite(tex: Texture2D,base: Vector2,dimensions: Vector2,flip: bool=false,tint:=Color.WHITE,angle: float=0.0) -> void:
 	if tex==null:return
+	dimensions*=_visual_scale(base)
 	# Uniform cell baseline makes every unit stand on its lane, including 4v4.
 	draw_set_transform(base,angle,Vector2(-1 if flip else 1,1))
 	draw_texture_rect(tex,Rect2(Vector2(-dimensions.x/2,-dimensions.y*.90),dimensions),false,tint)
@@ -102,9 +123,13 @@ func _draw() -> void:
 		if float(u.hp)<=0:continue
 		var beast: String=str(u.get("beast",""))
 		var row: int=int(u.get("row",0))
-		var loc:=point(float(u.x),row)
+		var visual_x:=lerpf(float(_previous_positions.get(int(u.id),u.x)),float(u.x),clampf(_snapshot_age/_snapshot_interval,0,1))
+		var loc:=point(visual_x,row)
 		var attacking: bool=time-float(u.get("atkFxTime",-999))<.22
-		var frame:=3 if attacking else 1+int(time*6+float(u.id))%2 if _moving.get(int(u.id),false) else 0
+		# Contact, passing, opposite contact, passing: distance-driven gait avoids
+		# moonwalking at slow speed and freezes correctly during pause/replay.
+		var walk_frames: Array[int]=[1,0,2,0]
+		var frame:=3 if attacking else walk_frames[int(float(_stride.get(int(u.id),0))/9.0)%4] if _moving.get(int(u.id),false) else 0
 		var tex: Texture2D
 		var dims:=Vector2(68,82)
 		if not beast.is_empty():
@@ -119,7 +144,7 @@ func _draw() -> void:
 			var def: Dictionary=civ.units[u.unitId]
 			tex=SpriteAtlas.frame(str(u.civId),ids.find(u.unitId),frame)
 			var tier: int=int(def.tier)
-			dims*=1+maxi(0,tier-2)*.16
+			dims*=[1.0,1.12,1.65,2.25][clampi(tier-1,0,3)]
 			if bool(def.get("machine",false)):dims*=1.2
 			if str(u.civId)=="zom_asym":dims*=float(def.art.get("scale",1))
 			if u.get("molted",false):dims*=1.18
@@ -129,6 +154,14 @@ func _draw() -> void:
 		if u.get("poison")!=null:tint=Color(.8,1,.65)
 		if float(u.get("stunUntil",0))>time:tint=Color(.65,.8,1)
 		_sprite(tex,loc,dims,flip,tint)
+		dims*=_visual_scale(loc)
+		if beast.is_empty():
+			var tier_fx: int=int(catalog.civs[u.civId].units[u.unitId].tier)
+			if tier_fx>=3:
+				var glow:=Color(.3,.85,.8,.35) if u.team=="hk" else Color(.85,.25,.45,.35)
+				draw_arc(loc+Vector2(0,2),dims.x*.3,0,TAU,24,glow,2)
+				if attacking:
+					draw_arc(loc+Vector2(0,-dims.y*.4),dims.x*.6,-1.2 if not flip else 1.9,1.2 if not flip else 4.3,16,Color(1,.78,.35,.8),3 if tier_fx==3 else 5)
 		if float(u.hp)<float(u.hpMax) or not beast.is_empty():_bar(loc+Vector2(-dims.x*.26,-dims.y*.88),dims.x*.52,float(u.hp),float(u.hpMax),PixelTheme.JADE if u.team=="hk" else PixelTheme.RED)
 		if attacking:
 			var attack_pos:=loc+Vector2((-1 if flip else 1)*dims.x*.35,-dims.y*.45)

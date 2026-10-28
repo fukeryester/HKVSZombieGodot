@@ -40,8 +40,22 @@ func _ready() -> void:
 	page.add_child(PixelTheme.label("正在点亮维港灯火……",36))
 	if not Bridge.ready_ok: await Bridge.connected
 	db=Bridge.catalog
-	_menu()
+	_title_menu()
 	if "--smoke" in OS.get_cmdline_user_args(): _smoke()
+
+func _title_menu() -> void:
+	screen="title";_new_page()
+	_spacer(page)
+	_text(page,"香港大战僵尸 Ⅱ",64,PixelTheme.GOLD)
+	_text(page,"生 死 存 亡",36)
+	_text(page,"维港最后的防线",22,PixelTheme.DIM)
+	_spacer(page)
+	_button(page,"开始游戏 · 选择文明",_menu)
+	_button(page,"单局回放",_archive)
+	_button(page,"文明与兵种图鉴",func():_codex(chosen))
+	_button(page,"账号",_account)
+	_button(page,"音乐与音效开关",func():sound.toggle())
+	_spacer(page)
 
 func _clear(node: Node) -> void:
 	for child in node.get_children(): node.remove_child(child);child.queue_free()

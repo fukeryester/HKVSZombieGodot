@@ -1,0 +1,22 @@
+{
+  "generator": "Built-in ImageGen",
+  "date": "2026-10-28",
+  "direction": "Chunky low-resolution 48x64 pixel sprites; limited palette; no realistic rendering; stable baseline and opposing walk contacts.",
+  "sources": {
+    "hk_police": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-20ee6dcb-9865-4f8f-8217-036a98e01f61.png",
+    "hk_finance": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-a77b2620-83bb-4ac3-99b5-172f9868d37c.png",
+    "hk_slum": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-a4dbb81a-7662-48aa-9289-3b70bf0af021.png",
+    "zom_classic": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-ac1b6093-6e99-4796-b768-ce6bb0b1d869.png",
+    "zom_ghost": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-303d0930-262f-4f43-95e7-c02283c3e2ec.png",
+    "zom_bio": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-50d91e84-17b0-475a-9ee8-b4f8f2ebc007.png",
+    "hk_university": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-526f1592-5c2a-4c2e-b054-b77385071364.png",
+    "hk_wild": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-a371f136-ee94-4427-b107-925c9323925e.png",
+    "hk_gang": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-c7eb5aeb-a3b5-4728-9f01-37344bf092b7.png",
+    "zom_robot": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-d39fb4cf-5439-48dc-8410-b9544b6705d8.png",
+    "zom_necro": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-bf988328-2a7b-40fb-8e9e-f53fe81eda25.png",
+    "zom_asym": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-bde00b56-a2f8-4d7c-858f-1c90a72f9e57.png",
+    "settlements": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-ffc49557-b68e-4e8a-9ef4-226e8ea88483.png",
+    "workers": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-552c61d3-2006-4797-a0dc-9f5247f08b86.png",
+    "war_beasts": "C:\\Users\\lefengliang\\.codex\\generated_images\\01a166a9-061c-7573-b5ab-0019f1a9f2b6\\exec-a3f78ddc-1b81-4357-9af4-a89466254814.png"
+  }
+}
