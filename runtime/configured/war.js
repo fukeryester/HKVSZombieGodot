@@ -21,7 +21,7 @@ window.War=(()=>{
   function effect(s,kind,data,life=1){s.effects.push({id:s.nextEffectId++,kind,life,initLife:life,...data});}
   function summon(s,p,kind){const d=Object.hasOwn(DEFS,kind)?DEFS[kind]:null;if(!d||d.team!==p.team)return {ok:false,err:'请选择本阵营的战争巨兽'};if(p.isAI&&!teamIsAI(s,p.team))return {ok:false,err:'有真人的队伍由真人选择战争巨兽'};if(!canSummon(s,p))return {ok:false,err:s.war.teams[p.team].used?'友方已召唤战争巨兽，本局机会已用尽':'全队基地总耐久需不高于10%'};
     const entry=s.war.teams[p.team];p.gmBeastReady=false;entry.used=true;entry.available=false;entry.kind=kind;entry.seat=p.seat;
-    const bounds=patrolBounds(s),x=kind==='cyst'?900:d.speed>0?(p.team==='hk'?bounds.left:bounds.right):p.baseX-110;
+    const bounds=patrolBounds(s),x=kind==='cyst'?Sim.LANE_LEN/2:d.speed>0?(p.team==='hk'?bounds.left:bounds.right):p.baseX-110;
     const u={id:s.nextUnitId++,seat:p.seat,team:p.team,civId:p.civId,unitId:'war_'+kind,beast:kind,def:d,x,y:p.row*60,row:p.row,dir:p.team==='hk'?1:-1,hp:d.hp,hpMax:d.hp,speed:d.speed,bodyRadius:d.bodyRadius,cdAtk:0,atkFxTime:-999,born:s.time,popCost:0,free:true,nextSkill:s.time+6,nextSpawn:s.time+1,lives:kind==='cyst'?3:1,patrolDir:p.team==='hk'?1:-1,patrolTurns:0,turnUntil:0};
     if(kind==='train')u.parts=Array.from({length:5},(_,i)=>({id:i,hp:d.hp/5,maxHp:d.hp/5,cd:0}));s.units.push(u);entry.unitId=u.id;p.unitsBuilt++;
     // Execute ordinary troops directly; all war beasts remain immune to arrival clearing.
@@ -57,7 +57,7 @@ window.War=(()=>{
     effect(s,kind,{x,y:u.y,row:u.row,tx,ty:aimY(target),toRow:target.row,team:u.team,flying:!!u.def.flying},kind==='war_bomb'?.8:.2);
   }
   function reinforcement(s,p,x){const pool=[];for(const cid of ZOM_CIVS)for(const [uid,d]of Object.entries(CIVS[cid].units))if(d.tier<=3)pool.push([cid,uid]);const [cid,uid]=pool[Math.floor(random(s)*pool.length)];return Sim.spawnUnit(s,p,uid,{civId:cid,reinforcement:true,x,y:p.row*60});}
-  function castMech(s,u,mode=Math.floor(random(s)*4)){const foes=s.units.filter(t=>t.team!==u.team&&!t.def.isBase&&t.hp>0),anchor=foes[Math.floor(random(s)*Math.max(1,foes.length))],x=anchor?.x??Math.max(0,Math.min(1800,u.x+u.dir*300));
+  function castMech(s,u,mode=Math.floor(random(s)*4)){const foes=s.units.filter(t=>t.team!==u.team&&!t.def.isBase&&t.hp>0),anchor=foes[Math.floor(random(s)*Math.max(1,foes.length))],x=anchor?.x??Math.max(0,Math.min(Sim.LANE_LEN,u.x+u.dir*300));
     u.active={mode,until:s.time+4,nextAt:s.time+.2,shots:0,x,done:false,targets:[]};
     if(mode===3){u.active.targets=foes.filter(t=>!t.beast).sort((a,b)=>b.hp-a.hp||a.id-b.id).slice(0,3).map(t=>t.id);u.active.killAt=s.time+1;for(const id of u.active.targets){const t=s.units.find(t=>t.id===id);effect(s,'war_execution',{x:t.x,y:t.y,row:t.row,unitId:id},1.15);}}
     if(mode===2)effect(s,'war_laser',{x:u.x,y:u.y,row:u.row,team:u.team,dir:u.dir,unitId:u.id},4);
@@ -81,7 +81,7 @@ window.War=(()=>{
       if(u.beast==='cyst'){for(const t of s.units)if(t.team!==u.team&&!t.def.flying&&t.hp>0)t.x=block(s,t,t.x);continue;}
       patrol(s,u,dt);
       if(u.beast==='train'){
-        for(const part of trainParts(u)){const actual=u.parts.find(p=>p.id===part.id);actual.cd-=dt;if(actual.cd>0)continue;const target=nearEnemy(s,u,u.def.range,part.x);if(target){shot(s,u,target,'war_tracer',u.def.dmg,0,part.x);actual.cd=.18;actual.lastShot=s.time;}}continue;
+        for(const part of trainParts(u)){const actual=u.parts.find(p=>p.id===part.id);actual.cd-=dt;if(actual.cd>0)continue;const target=nearEnemy(s,u,u.def.range,part.x);if(target){shot(s,u,target,'war_tracer',u.def.dmg,0,part.x);actual.cd=u.def.atkCd;actual.lastShot=s.time;}}continue;
       }
       const target=nearEnemy(s,u,u.def.range);if(target)u.dir=target.x>=u.x?1:-1;
       if(u.beast==='mech'){if(s.time>=u.nextSkill){u.nextSkill+=6;if(nearEnemy(s,u))castMech(s,u);}tickMechSkill(s,u);}

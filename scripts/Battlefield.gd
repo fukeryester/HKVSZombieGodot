@@ -223,7 +223,7 @@ func _draw() -> void:
 				var missile:=loc.lerp(target,1-opacity);missile.y-=sin(opacity*PI)*120
 				draw_rect(Rect2(missile,Vector2(10,5)),Color("ffe5ac"));draw_line(missile,missile+Vector2(-15,-8),PixelTheme.RED,4)
 		elif kind=="war_laser":
-			var end:=point(1800 if int(effect.get("dir",1))>0 else 0,int(effect.get("row",0)),-35)
+			var end:=point(float(layout_config.world_length) if int(effect.get("dir",1))>0 else 0,int(effect.get("row",0)),-35)
 			draw_line(loc,end,Color(1,.15,.25,.25),24);draw_line(loc,end,Color(1,.6,.4,.7),9);draw_line(loc,end,Color(1,.95,.8),3)
 		elif kind in ["war_execution","war_execution_hit"]:
 			draw_arc(loc,34,0,TAU,24,PixelTheme.RED,3);draw_line(loc-Vector2(40,40),loc+Vector2(40,40),PixelTheme.RED,3);draw_line(loc-Vector2(-40,40),loc+Vector2(-40,40),PixelTheme.RED,3)

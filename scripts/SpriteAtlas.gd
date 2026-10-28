@@ -35,8 +35,30 @@ static func frame(name: String,row: int,column: int,rows: int=7,columns: int=4) 
 	regions[key]=a
 	return a
 
-static func portrait(civ: String,unit_index: int=6) -> TextureRect:
-	var p:=TextureRect.new();p.texture=frame(civ,unit_index,0)
+static func configured_icon(reference: String) -> Texture2D:
+	if reference.is_empty():return null
+	var cache_key: String="icon:"+reference
+	if textures.has(cache_key):return textures[cache_key]
+	var parts:=reference.split("#")
+	var path: String="res://"+parts[0]
+	if not ResourceLoader.exists(path):return null
+	var tex: Texture2D=load(path)
+	if parts.size()==2:
+		var n:=parts[1].split(",")
+		if n.size()!=4:return null
+		var row:=int(n[0]);var column:=int(n[1]);var rows:=int(n[2]);var columns:=int(n[3])
+		if rows<=0 or columns<=0 or row<0 or row>=rows or column<0 or column>=columns:return null
+		if parts[0].begins_with("assets/sprites/"):
+			tex=frame(parts[0].get_file().get_basename(),row,column,rows,columns)
+		else:
+			var a:=AtlasTexture.new();a.atlas=tex
+			var cell:=Vector2(float(tex.get_width())/columns,float(tex.get_height())/rows)
+			a.region=Rect2(Vector2(column,row)*cell,cell);tex=a
+	textures[cache_key]=tex
+	return tex
+
+static func portrait(civ: String,unit_index: int=6,reference: String="") -> TextureRect:
+	var p:=TextureRect.new();p.texture=configured_icon(reference) if not reference.is_empty() else frame(civ,unit_index,0)
 	p.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	p.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	p.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST

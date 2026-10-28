@@ -8,9 +8,10 @@ for file in sorted(Path(os.environ.get('CONFIG_DIR',str(root/'config'))).glob('*
     if file.name.startswith('~$'):continue
     wb=load_workbook(file,read_only=True,data_only=False)
     for row in wb['参数'].iter_rows(min_row=2,values_only=True):
-        key,value=row[0],row[2]
+        key,value=row[5],row[2]
         if key is None:continue
         if key in result:raise ValueError('Duplicate configuration key: '+key)
-        if isinstance(value,bool) or not isinstance(value,(int,float)):raise ValueError('Numeric value required (no formulas): '+key)
+        if isinstance(value,str) and value.startswith('='):raise ValueError('Formulas are not supported: '+key)
+        if value is None:value=''
         result[key]=value
 print(json.dumps(result,ensure_ascii=True,allow_nan=False))

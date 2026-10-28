@@ -121,8 +121,9 @@ func _menu() -> void:
 	for id in ids:
 		var c: Dictionary=db.civs[id]
 		var card:=_panel(grid);card.custom_minimum_size=Vector2(270,210)
-		var image:=SpriteAtlas.portrait(id);image.custom_minimum_size=Vector2(90,110);card.add_child(image)
-		_button(card,("◆ " if id==chosen else "")+str(c.name),func():chosen=id;_menu())
+		var stripe:=ColorRect.new();stripe.color=Color(str(c.get("color","#1e5599")));stripe.custom_minimum_size=Vector2(0,4);stripe.mouse_filter=Control.MOUSE_FILTER_IGNORE;card.add_child(stripe)
+		var image:=SpriteAtlas.portrait(id,6,str(c.get("icon","")));image.custom_minimum_size=Vector2(90,110);card.add_child(image)
+		var choice:=_button(card,("◆ " if id==chosen else "")+str(c.name),func():chosen=id;_menu());choice.add_theme_color_override("font_color",Color(str(c.get("accent","#e0ba62"))))
 		_text(card,str(c.get("tagline",c.get("subtitle",""))),16,PixelTheme.DIM)
 	var right:=_panel(columns);right.custom_minimum_size.x=420
 	_text(right,str(db.civs[chosen].name),28,PixelTheme.GOLD)
@@ -244,6 +245,7 @@ func _tab(which: String) -> void:
 			var id: String=ids[i];var u: Dictionary=db.civs[p.civId].units[id]
 			var card:=_panel(cards);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL;card.custom_minimum_size.x=156
 			var b:=_button(card,str(i+1)+" · "+str(u.name),func():_act({"op":"spawn","unit":id,"laneId":army_lane}))
+			_configure_icon(b,u)
 			b.add_theme_font_size_override("font_size",14)
 			var price:=_text(card,cost(view.ui.army[i].cost),16,PixelTheme.GOLD)
 			b.tooltip_text=str(u.get("desc",""))+"\n生命 %d / 攻击 %d / 速度 %d\n%d本 · %d人口 · %d秒"%[u.hp,u.dmg,u.speed,u.tier,u.pop,u.buildTime]
@@ -275,7 +277,7 @@ func _tab(which: String) -> void:
 			var slots:=OptionButton.new()
 			for slot in d.slots:slots.add_item("后方位置 "+str(int(slot)+1),int(slot))
 			card.add_child(slots)
-			_button(card,"派农民建造",func():_act({"op":"construct","kind":d.id,"slot":slots.get_selected_id()})).disabled=read_only
+			var build_button:=_button(card,"派农民建造",func():_act({"op":"construct","kind":d.id,"slot":slots.get_selected_id()}));build_button.disabled=read_only;build_button.tooltip_text=str(d.get("desc",""));_configure_icon(build_button,d)
 			_button(card,"在地图选址",func():field.placing=d.id).disabled=read_only
 		for site in p.sites:
 			var line:=_row(content);var status:=_text(line,"",20)
@@ -291,6 +293,7 @@ func _tab(which: String) -> void:
 			var d: Dictionary=view.ui.skills[i];var card:=_panel(cards);card.custom_minimum_size=Vector2(410,180);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 			_text(card,str(d.name),28,PixelTheme.GOLD);_wrap(card,str(d.get("desc","")),20)
 			var b:=_button(card,"施放",func():_act({"op":"skill","skill":d.id}))
+			_configure_icon(b,d)
 			updates.append(func(q,_s,v):
 				var sk: Dictionary=v.ui.skills[i]
 				b.text="冷却 %d 秒"%ceilf(float(sk.cooldown)) if float(sk.cooldown)>0 else "施放 · 能量 "+str(sk.get("cost",0))
@@ -394,7 +397,7 @@ func _beasts() -> void:
 		var d: Dictionary=db.beasts[id]
 		if d.team!=_player().team:continue
 		var card:=_panel(cards);card.custom_minimum_size=Vector2(400,370);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-		var img:=TextureRect.new();img.texture=SpriteAtlas.frame("war_beasts",Battlefield.BEASTS.find(id),0,6);img.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;img.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;img.custom_minimum_size=Vector2(250,260);card.add_child(img)
+		var img:=TextureRect.new();img.texture=SpriteAtlas.configured_icon(str(d.get("icon","")));img.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;img.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;img.custom_minimum_size=Vector2(250,260);card.add_child(img)
 		_text(card,str(d.name),28,PixelTheme.GOLD);_wrap(card,str(d.desc),20)
 		_button(card,"召唤",func():_act({"op":"summon_beast","kind":id});_close_modal())
 
@@ -423,13 +426,19 @@ func _codex(id: String) -> void:
 	for civ in db.civs:select.add_item(db.civs[civ].name);select.set_item_metadata(select.item_count-1,civ);if civ==id:select.select(select.item_count-1)
 	select.item_selected.connect(func(i):_codex(select.get_item_metadata(i)));body.add_child(select)
 	_wrap(body,str(db.civs[id].get("desc","")),24)
+	_text(body,"基地："+str(db.civs[id].buildings.hq.name),18,PixelTheme.DIM)
 	var grid:=GridContainer.new();grid.columns=4;body.add_child(grid);var index:=0
 	for uid in db.civs[id].units:
 		var u: Dictionary=db.civs[id].units[uid];var card:=_panel(grid);card.custom_minimum_size.x=270
-		card.add_child(SpriteAtlas.portrait(id,index));index+=1
+		card.add_child(SpriteAtlas.portrait(id,index,str(u.get("icon",""))));index+=1
 		_text(card,str(u.name),24,PixelTheme.GOLD)
 		_text(card,"%d本 · 生命%d · 攻击%d"%[u.tier,u.hp,u.dmg],20)
 		_wrap(card,str(u.get("desc","")),18)
+
+func _configure_icon(button: Button,definition: Dictionary) -> void:
+	button.icon=SpriteAtlas.configured_icon(str(definition.get("icon","")))
+	button.expand_icon=true
+	button.add_theme_constant_override("icon_max_width",24)
 
 func _archive() -> void:
 	var r:=await Bridge.command("archive")
