@@ -15,6 +15,7 @@ var _snapshot_interval:=1.0/30.0
 var _stride: Dictionary={}
 var _corpses: Array=[]
 var _hit_times: Dictionary={}
+var layout_config: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/battle-layout.json"))
 var _shake:=0.0
 var _last_event:=0
 var _render_time:=0.0
@@ -67,12 +68,8 @@ func _process(delta: float) -> void:
 
 func point(x: float,row: float=0,dy: float=0) -> Vector2:
 	var lanes:=maxi(1,int(state.get("players",[]).size()/2))
-	var depth:=clampf(row/maxi(1,lanes-1),0,1)
-	var projected_x: float
-	if x<330:projected_x=lerpf(.015,.10,clampf(x/330.0,0,1))
-	elif x>1470:projected_x=lerpf(.90,.985,clampf((x-1470)/330.0,0,1))
-	else:projected_x=lerpf(.10,.90,(x-330)/1140.0)
-	return Vector2(projected_x*size.x,size.y*(.48+.44*depth)+dy)
+	var depth:=float(layout_config.far_scale)+(1.0-float(layout_config.far_scale))*clampf(row/maxi(1,lanes-1),0,1)
+	return Vector2(size.x*.5+(x-float(layout_config.world_length)/2)/float(layout_config.world_length)*(size.x-2*float(layout_config.edge_padding))*depth,size.y*(float(layout_config.road_top)+float(layout_config.road_depth)*row/maxi(1,lanes-1))+dy)
 
 func unit_row(u: Dictionary) -> float:
 	var lanes:=maxi(1,int(state.get("players",[]).size()/2))
@@ -89,7 +86,7 @@ func aim_point(x: float,row: int) -> Vector2:
 	return foot-Vector2(0,35*_visual_scale(foot))
 
 func _visual_scale(base: Vector2) -> float:
-	return clampf(size.x/1800.0,.25,1.2)*.72*lerpf(.65,1.0,clampf((base.y/size.y-.48)/.44,0,1))
+	return clampf(size.x/float(layout_config.world_length),.25,1.2)*float(layout_config.unit_scale)*lerpf(float(layout_config.far_scale),1.0,clampf((base.y/size.y-float(layout_config.road_top))/float(layout_config.road_depth),0,1))
 
 func _sprite(tex: Texture2D,base: Vector2,dimensions: Vector2,flip: bool=false,tint:=Color.WHITE,angle: float=0.0) -> void:
 	if tex==null:return
@@ -111,15 +108,6 @@ func _draw() -> void:
 	var time: float=float(state.get("time",0))
 	var players: Array=state.get("players",[])
 	var lanes:=maxi(1,players.size()/2)
-	# Widen the road to match the projection; don't place troops on buildings
-	# baked into the old background image.
-	draw_rect(Rect2(0,size.y*.43,size.x,size.y*.57),Color("282830"))
-	if _background:
-		var source_size:=_background.get_size()
-		draw_texture_rect_region(_background,Rect2(0,size.y*.43,size.x,size.y*.57),Rect2(0,source_size.y*.76,source_size.x,source_size.y*.24),Color(.7,.7,.75))
-	for stripe in range(6):
-		var sy:=size.y*(.48+stripe*.085)
-		draw_line(Vector2(0,sy),Vector2(size.x,sy),Color(.38,.37,.35,.2),1)
 	# Entire lower quarter is paved; every player row has a continuous road.
 	for row in range(lanes):
 		var y:=point(0,row).y
@@ -190,6 +178,7 @@ func _draw() -> void:
 			var def: Dictionary=civ.units[u.unitId]
 			tex=SpriteAtlas.frame(str(u.civId),ids.find(u.unitId),frame)
 			var tier: int=int(def.tier)
+			dims*=float(def.get("displayScale",1.0))
 			dims*=[1.0,1.12,1.65,2.25][clampi(tier-1,0,3)]
 			if bool(def.get("machine",false)):dims*=1.2
 			if str(u.civId)=="zom_asym":dims*=float(def.art.get("scale",1))

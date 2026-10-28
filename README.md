@@ -42,6 +42,8 @@ Godot 版技能冷却统一为原值的 65%（取整，至少 1 秒），在适�
 
 ## 构建与验证
 
+数值编辑入口为 `config/` 下七份 Excel。修改“配置值”列后运行 `npm run config:import`；所有构建也会自动导入。字段、优先级与高级规则注意事项见 [配置说明](config/README.md)。需要 Python 与 openpyxl 读取 Excel；游戏运行不依赖它们。道路已恢复 v1.1 比例，多帧动作和紧凑 UI 保留。
+
 ```powershell
 npm ci
 $env:GODOT_BIN='C:\path\Godot_v4.7.2-stable_win64_console.exe'
