@@ -1,11 +1,16 @@
 /* Godot owns presentation. This adapter schedules the unmodified upstream rules. */
 window.GodotGame = (() => {
+  // Explicit balance revision requested for the Godot edition: 35% shorter
+  // cooldowns, shared by AI, local play, network peers and replay simulation.
+  const originalCooldowns=Object.fromEntries(Object.entries(SKILLS).map(([id,s])=>[id,s.cd]));
+  const cooldownProfile=modern=>{for(const [id,s] of Object.entries(SKILLS))s.cd=modern?Math.max(1,Math.round(originalCooldowns[id]*0.65)):originalCooldowns[id];};
+  cooldownProfile(true);
   let state=null, config=null, seat=0, local=true, paused=false, speed=1, acc=0;
   let net=null, replay=null, seekTarget=null, seekResume=false, ended=false, aborted=false;
   let lastReplay=null, saved=null, result=null, notice='', screen='menu', storeEntries=[], saveStatus='';
   let gmRequest=null, openBeasts=false, archiveSerial=0;
   const clone=value=>JSON.parse(JSON.stringify(value));
-  const version=()=>/^\/g\/[^/]+\/v\/([^/]+)\//.exec(location.pathname)?.[1]||'godot-1';
+  const version=()=>(/^\/g\/[^/]+\/v\/([^/]+)\//.exec(location.pathname)?.[1]||'godot-1')+'-cd65';
   const say=text=>{notice=String(text||'');};
   function localConfig(a){
     const size=Math.max(1,Math.min(4,Number(a.size)||1)),side=a.side==='zom'?'zom':'hk';
@@ -23,6 +28,7 @@ window.GodotGame = (() => {
     }catch(e){say('回放保存失败：'+e.message);}
   }
   function start(c,s,isLocal,isReplay=false){
+    if(!isReplay)cooldownProfile(true);
     if(state&&!ended)stopRecord('restart');
     config=c;seat=s;local=isLocal;state=Sim.createInitialState(c);replay=null;seekTarget=null;
     paused=false;speed=1;acc=0;ended=false;aborted=false;lastReplay=null;result=null;saved=null;saveStatus='';openBeasts=false;
@@ -86,7 +92,7 @@ window.GodotGame = (() => {
     }:null;
     return {screen,state:s,seat,local,paused,speed,replay:!!replay,seeking:seekTarget!==null,replayEnd:replay?.record.endTick||0,verified:!!replay?.verified,replayError:replay?.error||'',ended,aborted,result,notice,saveStatus,ui,openBeasts,online:Progress.online(),score:Progress.score(),rankTitle:Progress.title(Progress.score()),lobby:net?.lobby||null,room:net?.room?.code||'',host:!!net?.host,mySeat:net?.mySeat??-1};
   }
-  function playRecord(file){const player=new Replay.Player(file);net?.close();net=null;start(file.config,file.seat,true,true);replay=player;state=player.state;lastReplay=file;}
+  function playRecord(file){cooldownProfile(String(file.versionId).endsWith('-cd65'));const player=new Replay.Player(file);net?.close();net=null;start(file.config,file.seat,true,true);replay=player;state=player.state;lastReplay=file;}
   async function asyncCommand(method,a){
     if(method==='connect'){window.HKVZPlatform?.configure(a);await Progress.init();return {ok:true,online:Progress.online()};}
     if(method==='create'||method==='join'){leave();net=new BattleNet(networkEvent);if(method==='create')await net.create(a.size,!!a.ranked);else await net.join(a.code.trim().toUpperCase());return {ok:true};}

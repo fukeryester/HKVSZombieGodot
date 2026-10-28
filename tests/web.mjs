@@ -18,7 +18,7 @@ try{
  for(let i=0;i<3;i++){await page.keyboard.press('1');await page.waitForTimeout(65);}await page.keyboard.press('w');await page.waitForTimeout(100);
  let v=await view();assert.equal(v.state.players[0].queue.length,3);assert.equal(v.state.players[0].workerQueue.length,1);
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/web-battle.png'});
- for(const [tab,x] of [['workers',255],['buildings',424],['skills',570]]){await page.mouse.click(x,539);await page.waitForTimeout(120);await page.screenshot({path:`artifacts/web-${tab}.png`});}
+ for(const [tab,x] of [['workers',150],['buildings',255],['skills',350]]){await page.mouse.click(x,730);await page.waitForTimeout(120);await page.screenshot({path:`artifacts/web-${tab}.png`});}
  await page.keyboard.press('p');await page.keyboard.press('p');await page.waitForFunction(()=>GodotGame.view().state.gmUsed);await page.waitForTimeout(400);await page.screenshot({path:'artifacts/web-beasts.png'});
  await page.mouse.click(280,625); // Summon may be lower depending on font sizing; validate using command if no click hit.
  if(!(await view()).state.units.some(u=>u.beast))await call('action',{op:'summon_beast',kind:'zeppelin'});
@@ -36,7 +36,7 @@ try{
  await asyncCall('watch',{index:0});await call('seek',{tick:file.endTick});await page.waitForFunction(()=>GodotGame.view().verified);assert.equal((await view()).replayError,'');
  await call('seek',{tick:135});await page.waitForFunction(()=>!GodotGame.view().seeking);assert.equal((await view()).state.tick,135);
  await call('seek',{tick:file.endTick});await page.waitForFunction(()=>GodotGame.view().verified);await page.screenshot({path:'artifacts/web-replay.png'});
- await page.waitForTimeout(200);await page.mouse.click(670,467);await page.waitForTimeout(300);
+ await page.waitForTimeout(200);await page.mouse.click(670,672);await page.waitForTimeout(300);
  const clicked=(await view()).state.tick;assert.ok(clicked>100&&clicked<400,'Clicking the timeline should seek to the selected time, got '+clicked);
  await call('seek',{tick:file.endTick});await page.waitForFunction(()=>GodotGame.view().verified);
  await page.reload();await page.waitForFunction(()=>window.GodotGame);assert.ok((await asyncCall('archive')).entries.length>=2);

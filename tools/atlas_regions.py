@@ -1,13 +1,14 @@
 """Read alpha projections to describe sprite regions; never rewrites generated art."""
 from PIL import Image
 from pathlib import Path
-import json,itertools
+import json,itertools,sys
 root=Path(__file__).resolve().parents[1]
 result={}
 for source in (root/'assets/sprites').glob('*.png'):
     image=Image.open(source).convert('RGBA')
     width,height=image.size
     rows=6 if source.stem=='war_beasts' else 4 if source.stem in ('workers','settlements') else 7
+    columns=12 if '--motion' in sys.argv and source.stem!='settlements' else 4
     alpha=image.getchannel('A')
     # Find the least occupied scanline near each nominal row separator.
     occupancy=[sum(v>80 for v in alpha.crop((0,y,width,y+1)).getdata()) for y in range(height)]
@@ -35,17 +36,36 @@ for source in (root/'assets/sprites').glob('*.png'):
         # Columns may have wider attack frames; use local alpha valleys.
         column_counts=[sum(v>80 for v in alpha.crop((x,top,x+1,bottom)).getdata()) for x in range(width)]
         xs=[0]
-        for c in range(1,4):
-            center=width*c/4
-            candidates=range(max(xs[-1]+20,int(center-width*.035)),min(width-1,int(center+width*.035)))
+        for c in range(1,columns):
+            center=width*c/columns
+            candidates=range(max(xs[-1]+2,int(center-width/columns*.12)),min(width-1,int(center+width/columns*.12)))
             xs.append(min(candidates,key=lambda x:sum(column_counts[max(0,x-1):x+2])+abs(x-center)*.015))
         xs.append(width)
-        for c in range(4):
+        if columns==12:
+            # Generated animation rows can contain extra in-betweens. Read
+            # transparent gutters rather than slicing through those poses.
+            spans=[]
+            for occupied,group in itertools.groupby(enumerate(column_counts),lambda item:item[1]>0):
+                indexes=[i for i,_ in group]
+                if occupied:
+                    if spans and indexes[0]-spans[-1][1]<3:spans[-1][1]=indexes[-1]+1
+                    else:spans.append([indexes[0],indexes[-1]+1])
+            spans=[s for s in spans if s[1]-s[0]>8]
+            if len(spans)>=10:
+                selected=list(range(4))+[4,5,6,7, min(8,len(spans)-3),min(9,len(spans)-3),len(spans)-2,len(spans)-1]
+                for index in selected:
+                    x0,x1=spans[index]
+                    bounds=alpha.crop((x0,top,x1,bottom)).getbbox()
+                    bx,by,ex,ey=bounds
+                    line.append([x0+bx,top+by,ex-bx,ey-by])
+                frames.append(line)
+                continue
+        for c in range(columns):
             bounds=alpha.crop((xs[c],top,xs[c+1],bottom)).point(lambda p:255 if p>80 else 0).getbbox()
             if not bounds: bounds=(0,0,xs[c+1]-xs[c],bottom-top)
             x0,y0,x1,y1=bounds
             line.append([xs[c]+x0,top+y0,x1-x0,y1-y0])
         frames.append(line)
-    result[source.stem]={'size':[width,height],'rows':boundaries,'frames':frames}
+    result[source.stem]={'size':[width,height],'rows':boundaries,'columns':columns,'frames':frames}
     print(source.stem,boundaries)
 (root/'assets/data/atlas-regions.json').write_text(json.dumps(result,separators=(',',':')),encoding='utf-8')

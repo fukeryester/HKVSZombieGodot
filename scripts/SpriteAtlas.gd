@@ -13,6 +13,9 @@ static func texture(name: String) -> Texture2D:
 	return textures[name]
 
 static func frame(name: String,row: int,column: int,rows: int=7,columns: int=4) -> AtlasTexture:
+	if layout.is_empty():layout=JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/atlas-regions.json"))
+	if layout.has(name):columns=int(layout[name].get("columns",4))
+	column=clampi(column,0,columns-1)
 	var key: String="%s:%d:%d:%d:%d"%[name,row,column,rows,columns]
 	if regions.has(key): return regions[key]
 	var tex:=texture(name)

@@ -28,6 +28,9 @@ var replay_layout := false
 var timeline: HSlider
 var dragging := false
 var sound: ArcadeAudio
+var toast: Label
+var toast_tween: Tween
+var last_notice: String=""
 const JOBS := {"food":"食物","wood":"木头","gold":"黄金","stone":"石头","idle":"待命"}
 
 func _ready() -> void:
@@ -75,13 +78,19 @@ func _row(parent: Node) -> HBoxContainer:
 	var r:=HBoxContainer.new();parent.add_child(r);return r
 
 func _text(parent: Node,text: String,size_px: int=24,color:=PixelTheme.PAPER) -> Label:
-	var l:=PixelTheme.label(text,size_px,color);parent.add_child(l);return l
+	var l:=PixelTheme.label(text,mini(size_px,14) if screen=="play" else size_px,color);parent.add_child(l);return l
 
 func _button(parent: Node,text: String,fn: Callable) -> Button:
-	var b:=PixelTheme.button(text,func():sound.click();fn.call());parent.add_child(b);return b
+	var b:=PixelTheme.button(text,func():sound.click();fn.call());parent.add_child(b)
+	if screen=="play":
+		b.custom_minimum_size.y=26;b.add_theme_font_size_override("font_size",14)
+	return b
 
 func _panel(parent: Node) -> VBoxContainer:
 	var p:=PanelContainer.new();parent.add_child(p)
+	if screen=="play":
+		var style:=PixelTheme.box(PixelTheme.PANEL,Color("706047"),1)
+		style.content_margin_top=2;style.content_margin_bottom=2;p.add_theme_stylebox_override("panel",style)
 	var v:=VBoxContainer.new();p.add_child(v);return v
 
 func _scroll(parent: Node) -> VBoxContainer:
@@ -166,6 +175,9 @@ func _update(v: Dictionary) -> void:
 		timeline.max_value=maxf(1,float(v.replayEnd))
 		if not dragging:timeline.set_value_no_signal(float(s.tick))
 	notice.text=("复盘演算中…… " if v.seeking else "")+str(v.notice)+("  ·  "+str(v.saveStatus) if v.saveStatus else "")
+	if str(v.notice)!=last_notice:
+		last_notice=str(v.notice)
+		if not last_notice.is_empty():_toast(last_notice)
 	var key:=current_tab+str(v.seat)+str(p.age)+JSON.stringify(p.sites.map(func(site):return [site.id,site.done]))
 	if key!=structural_key:_tab(current_tab);structural_key=key
 	for fn in updates:fn.call(p,s,v)
@@ -176,6 +188,7 @@ func _update(v: Dictionary) -> void:
 
 func _play() -> void:
 	screen="play";_new_page();army_lane="auto";worker_lane="auto";current_tab="army";result_shown=false
+	page.add_theme_constant_override("separation",2)
 	replay_layout=bool(view.get("replay",false))
 	top=_text(page,"",20)
 	var controls:=_row(page)
@@ -188,6 +201,12 @@ func _play() -> void:
 	_button(controls,"×2",func():Bridge.command("speed",{"value":2})).disabled=not bool(view.local)
 	_button(controls,"菜单",_pause_menu)
 	field=Battlefield.new();field.size_flags_vertical=Control.SIZE_EXPAND_FILL;page.add_child(field)
+	top.reparent(field);top.position=Vector2(10,8)
+	controls.reparent(field);controls.position=Vector2(10,30)
+	toast=PixelTheme.label("",22,PixelTheme.GOLD);field.add_child(toast)
+	toast.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE);toast.offset_top=90
+	toast.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;toast.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	toast.add_theme_color_override("font_shadow_color",Color.BLACK);toast.add_theme_constant_override("shadow_offset_x",2);toast.add_theme_constant_override("shadow_offset_y",2)
 	field.slot_clicked.connect(func(slot):_act({"op":"construct","kind":field.placing,"slot":slot});field.placing="")
 	if view.get("replay",false):
 		var replay_row:=_row(page)
@@ -203,9 +222,15 @@ func _play() -> void:
 	var tabs:=_row(page)
 	for pair in [["army","军队训练"],["workers","农民与经济"],["buildings","建筑与时代"],["skills","文明技能"]]:
 		_button(tabs,pair[1],func():_tab(pair[0]);structural_key="")
-	var container:=PanelContainer.new();container.custom_minimum_size.y=280;page.add_child(container)
+	var container:=PanelContainer.new();container.custom_minimum_size.y=110;page.add_child(container)
 	content=_scroll(container)
 	notice=_text(page,"",18,PixelTheme.DIM);notice.clip_text=true
+
+func _toast(message: String) -> void:
+	if not is_instance_valid(toast):return
+	if toast_tween:toast_tween.kill()
+	toast.text=message;toast.modulate=Color.WHITE
+	toast_tween=create_tween();toast_tween.tween_interval(2.5);toast_tween.tween_property(toast,"modulate:a",0.0,.5)
 
 func _tab(which: String) -> void:
 	if not is_instance_valid(content) or view.get("state")==null:return
@@ -218,12 +243,10 @@ func _tab(which: String) -> void:
 		for i in range(ids.size()):
 			var id: String=ids[i];var u: Dictionary=db.civs[p.civId].units[id]
 			var card:=_panel(cards);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL;card.custom_minimum_size.x=156
-			var image:=SpriteAtlas.portrait(p.civId,i);image.custom_minimum_size=Vector2(68,73);card.add_child(image)
 			var b:=_button(card,str(i+1)+" · "+str(u.name),func():_act({"op":"spawn","unit":id,"laneId":army_lane}))
-			b.add_theme_font_size_override("font_size",20)
-			_text(card,"%d本 · %d人口 · %d秒"%[u.tier,u.pop,u.buildTime],16)
+			b.add_theme_font_size_override("font_size",14)
 			var price:=_text(card,cost(view.ui.army[i].cost),16,PixelTheme.GOLD)
-			b.tooltip_text=str(u.get("desc",""))+"\n生命 %d / 攻击 %d / 速度 %d"%[u.hp,u.dmg,u.speed]
+			b.tooltip_text=str(u.get("desc",""))+"\n生命 %d / 攻击 %d / 速度 %d\n%d本 · %d人口 · %d秒"%[u.hp,u.dmg,u.speed,u.tier,u.pop,u.buildTime]
 			updates.append(func(_p,_s,v):b.disabled=not v.ui.army[i].enabled;price.text=cost(v.ui.army[i].cost))
 		_queues(content,"army",p)
 	elif which=="workers":
@@ -278,6 +301,7 @@ func _tab(which: String) -> void:
 func _lanes(parent: Node,kind: String,p: Dictionary) -> void:
 	var row:=_row(parent);_text(row,"士兵队列" if kind=="army" else "农民队列",20,PixelTheme.GOLD)
 	var select:=OptionButton.new();select.add_item("自动选择最早空闲队列");select.set_item_metadata(0,"auto")
+	select.add_theme_font_size_override("font_size",14)
 	var lanes: Array=view.ui.armyLanes if kind=="army" else view.ui.workerLanes
 	for lane in lanes:select.add_item(lane.name);select.set_item_metadata(select.item_count-1,lane.id)
 	var chosen_lane: String=army_lane if kind=="army" else worker_lane
@@ -313,7 +337,8 @@ func _queues(parent: Node,kind: String,p: Dictionary) -> void:
 
 func _act(args: Dictionary) -> void:
 	var r:=await Bridge.command("action",args)
-	if not r.get("ok",false):sound.error()
+	if not r.get("ok",false):
+		sound.error();_toast(str(r.get("error",view.get("notice","无法执行此操作"))))
 
 func _player() -> Dictionary:
 	return view.state.players[int(view.seat)]

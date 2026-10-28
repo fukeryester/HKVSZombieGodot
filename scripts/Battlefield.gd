@@ -13,6 +13,8 @@ var _previous_positions: Dictionary={}
 var _snapshot_age:=0.0
 var _snapshot_interval:=1.0/30.0
 var _stride: Dictionary={}
+var _corpses: Array=[]
+var _hit_times: Dictionary={}
 var _shake:=0.0
 var _last_event:=0
 var _render_time:=0.0
@@ -26,13 +28,19 @@ func _ready() -> void:
 		_background=load("res://assets/backgrounds/hong_kong_night.png")
 
 func update_world(next_state: Dictionary,local_seat: int,db: Dictionary) -> void:
+	var discontinuity: bool=state.is_empty() or next_state.get("seed")!=state.get("seed") or float(next_state.get("time",0))<float(state.get("time",0)) or float(next_state.get("time",0))-float(state.get("time",0))>1.0
+	if discontinuity:
+		_corpses.clear();_last_positions.clear();_previous_positions.clear();_stride.clear();_moving.clear()
 	_snapshot_interval=clampf(_snapshot_age,1.0/120.0,.1)
 	_snapshot_age=0.0
 	_previous_positions=_last_positions.duplicate()
 	var alive: Dictionary={}
+	var old_health: Dictionary={}
+	for u in state.get("units",[]):old_health[int(u.id)]=float(u.hp)
 	for u in next_state.get("units",[]):
 		var id: int=int(u.id)
 		alive[id]=true
+		if not discontinuity and old_health.has(id) and float(u.hp)<old_health[id]:_hit_times[id]=float(next_state.time)
 		if _last_positions.has(id):
 			var travelled:=absf(float(u.x)-float(_last_positions[id]))
 			_moving[id]=travelled>0.01
@@ -41,6 +49,11 @@ func update_world(next_state: Dictionary,local_seat: int,db: Dictionary) -> void
 	for id in _last_positions.keys():
 		if not alive.has(id):
 			_last_positions.erase(id);_previous_positions.erase(id);_moving.erase(id);_stride.erase(id)
+	if not discontinuity:
+		for old in state.get("units",[]):
+			if not alive.has(int(old.id)):
+				var corpse: Dictionary=old.duplicate(true);corpse["death_time"]=float(next_state.time);_corpses.append(corpse)
+	_corpses=_corpses.filter(func(u):return float(next_state.time)-float(u.death_time)<2.4)
 	state=next_state;seat=local_seat;catalog=db
 	for event in state.get("_events",[]):
 		if float(state.time)-float(event.time)<.1 and event.get("type","") in ["war_summon","base_destroyed","war_cyst_burst"]: _shake=1.0
@@ -52,13 +65,31 @@ func _process(delta: float) -> void:
 	_shake=maxf(0,_shake-delta*1.6)
 	if not state.is_empty(): queue_redraw()
 
-func point(x: float,row: int=0,dy: float=0) -> Vector2:
+func point(x: float,row: float=0,dy: float=0) -> Vector2:
 	var lanes:=maxi(1,int(state.get("players",[]).size()/2))
-	var depth:=0.82+0.18*float(row)/maxi(1,lanes-1)
-	return Vector2(size.x*.5+(x-900)/1800.0*(size.x-36)*depth,size.y*(0.69+0.21*float(row)/maxi(1,lanes-1))+dy)
+	var depth:=clampf(row/maxi(1,lanes-1),0,1)
+	var projected_x: float
+	if x<330:projected_x=lerpf(.015,.10,clampf(x/330.0,0,1))
+	elif x>1470:projected_x=lerpf(.90,.985,clampf((x-1470)/330.0,0,1))
+	else:projected_x=lerpf(.10,.90,(x-330)/1140.0)
+	return Vector2(projected_x*size.x,size.y*(.48+.44*depth)+dy)
+
+func unit_row(u: Dictionary) -> float:
+	var lanes:=maxi(1,int(state.get("players",[]).size()/2))
+	return float((int(u.id)*2654435761)%1009)/1008.0*maxi(1,lanes-1)
+
+func aim_point(x: float,row: int) -> Vector2:
+	var closest: Dictionary={}
+	var distance:=45.0
+	for u in state.get("units",[]):
+		if int(u.get("row",0))!=row:continue
+		var d:=absf(float(u.x)-x)
+		if d<distance:distance=d;closest=u
+	var foot:=point(x,unit_row(closest) if not closest.is_empty() else float(row))
+	return foot-Vector2(0,35*_visual_scale(foot))
 
 func _visual_scale(base: Vector2) -> float:
-	return clampf(size.x/1800.0,.25,1.2)*lerpf(.82,1.0,clampf((base.y/size.y-.69)/.21,0,1))
+	return clampf(size.x/1800.0,.25,1.2)*.72*lerpf(.65,1.0,clampf((base.y/size.y-.48)/.44,0,1))
 
 func _sprite(tex: Texture2D,base: Vector2,dimensions: Vector2,flip: bool=false,tint:=Color.WHITE,angle: float=0.0) -> void:
 	if tex==null:return
@@ -80,6 +111,15 @@ func _draw() -> void:
 	var time: float=float(state.get("time",0))
 	var players: Array=state.get("players",[])
 	var lanes:=maxi(1,players.size()/2)
+	# Widen the road to match the projection; don't place troops on buildings
+	# baked into the old background image.
+	draw_rect(Rect2(0,size.y*.43,size.x,size.y*.57),Color("282830"))
+	if _background:
+		var source_size:=_background.get_size()
+		draw_texture_rect_region(_background,Rect2(0,size.y*.43,size.x,size.y*.57),Rect2(0,source_size.y*.76,source_size.x,source_size.y*.24),Color(.7,.7,.75))
+	for stripe in range(6):
+		var sy:=size.y*(.48+stripe*.085)
+		draw_line(Vector2(0,sy),Vector2(size.x,sy),Color(.38,.37,.35,.2),1)
 	# Entire lower quarter is paved; every player row has a continuous road.
 	for row in range(lanes):
 		var y:=point(0,row).y
@@ -97,14 +137,15 @@ func _draw() -> void:
 		if p.get("baseRuined",false):
 			_sprite(base_tex,center,Vector2(base_dim.x,base_dim.y*.45),p.team=="zom",Color(.35,.30,.32,.7))
 		else:_sprite(base_tex,center,base_dim,p.team=="zom",Color.WHITE,jiggle)
-		_bar(center+Vector2(-54,-116-age*6),108,float(p.baseHp),float(p.baseHpMax),PixelTheme.JADE if p.team=="hk" else PixelTheme.RED)
-		draw_string(PixelTheme.FONT,center+Vector2(-52,-122-age*6),str(int(p.seat)+1)+" · "+str(p.age)+"本",HORIZONTAL_ALIGNMENT_LEFT,-1,12,PixelTheme.PAPER)
+		var label_y:=base_dim.y*_visual_scale(center)
+		_bar(center+Vector2(-30,-label_y),60,float(p.baseHp),float(p.baseHpMax),PixelTheme.JADE if p.team=="hk" else PixelTheme.RED)
+		draw_string(PixelTheme.FONT,center+Vector2(-30,-label_y-6),str(int(p.seat)+1)+" · "+str(p.age)+"本",HORIZONTAL_ALIGNMENT_LEFT,-1,12,PixelTheme.PAPER)
 		var resource_x: float=float(p.baseX)+(-1 if p.team=="hk" else 1)*170
 		_sprite(SpriteAtlas.frame("settlements",3,2 if p.team=="hk" else 3,4),point(resource_x,row),Vector2(172,95))
 		for site in p.sites:
 			var cols: Dictionary={"house":0,"barracks":1,"town_center":2,"mill":3,"castle":0,"bombard":1}
 			var mounted: bool=int(site.slot)>=6
-			var site_pos:=point(float(site.x),row,-28 if mounted else -26)
+			var site_pos:=point(float(site.x),row,-35 if mounted else -65-int(site.slot)%2*24)
 			var tex:=SpriteAtlas.frame("settlements",3 if mounted else 2,int(cols.get(site.kind,0)),4)
 			_sprite(tex,site_pos,Vector2(65,72) if not mounted else Vector2(44,48),p.team=="zom",Color.WHITE if site.done else Color(.85,.78,.58,.5))
 			if not site.done:
@@ -114,22 +155,27 @@ func _draw() -> void:
 			if p.civId=="zom_robot":worker_row=2
 			if p.civId=="zom_asym":worker_row=3
 			var wf:=0
-			if w.phase=="walk":wf=1+int(time*7+float(w.id))%2
-			elif w.job!="idle":wf=3 if int(time*4+float(w.id))%2==0 else 0
+			if w.phase=="walk":wf=int(float(w.x)/7.0)%4
+			elif w.job!="idle":wf=4+int(time*10+float(w.id))%6
 			_sprite(SpriteAtlas.frame("workers",worker_row,wf,4),point(float(w.x),row,4),Vector2(36,45)*(1.22 if worker_row==3 else 1.0),p.team=="zom")
 	var units: Array=state.get("units",[]).duplicate()
-	units.sort_custom(func(a,b):return float(a.get("row",0))<float(b.get("row",0)))
+	units.append_array(_corpses)
+	units.sort_custom(func(a,b):return unit_row(a)<unit_row(b))
 	for u in units:
-		if float(u.hp)<=0:continue
+		var dead: bool=u.has("death_time")
+		if float(u.hp)<=0 and not dead:continue
 		var beast: String=str(u.get("beast",""))
-		var row: int=int(u.get("row",0))
+		var row: float=unit_row(u)
 		var visual_x:=lerpf(float(_previous_positions.get(int(u.id),u.x)),float(u.x),clampf(_snapshot_age/_snapshot_interval,0,1))
 		var loc:=point(visual_x,row)
 		var attacking: bool=time-float(u.get("atkFxTime",-999))<.22
 		# Contact, passing, opposite contact, passing: distance-driven gait avoids
 		# moonwalking at slow speed and freezes correctly during pause/replay.
-		var walk_frames: Array[int]=[1,0,2,0]
-		var frame:=3 if attacking else walk_frames[int(float(_stride.get(int(u.id),0))/9.0)%4] if _moving.get(int(u.id),false) else 0
+		var elapsed:=time-float(u.get("atkFxTime",-999))
+		var frame:=int(float(_stride.get(int(u.id),0))/7.0)%4 if _moving.get(int(u.id),false) else 9
+		if elapsed>=0 and elapsed<.32:frame=mini(9,6+int(elapsed/.08))
+		elif not _moving.get(int(u.id),false) and float(u.get("cdAtk",0))>0 and float(u.get("cdAtk",0))<.18:frame=4 if float(u.cdAtk)>.09 else 5
+		if dead:frame=10 if time-float(u.death_time)<.22 else 11
 		var tex: Texture2D
 		var dims:=Vector2(68,82)
 		if not beast.is_empty():
@@ -151,25 +197,27 @@ func _draw() -> void:
 			if float(u.get("jumpUntil",0))>time:loc.y-=sin(clampf((time-float(u.get("jumpStart",time)))/maxf(.01,float(u.get("jumpDur",1))),0,1)*PI)*35
 		var flip: bool=float(u.get("dir",1))<0
 		var tint:=Color.WHITE
+		if dead:tint.a=clampf((2.4-(time-float(u.death_time)))/.7,0,1)
 		if u.get("poison")!=null:tint=Color(.8,1,.65)
 		if float(u.get("stunUntil",0))>time:tint=Color(.65,.8,1)
+		if not dead and time-float(_hit_times.get(int(u.id),-999))<.12:tint=Color(1,.35,.3)
 		_sprite(tex,loc,dims,flip,tint)
 		dims*=_visual_scale(loc)
-		if beast.is_empty():
+		if beast.is_empty() and not dead:
 			var tier_fx: int=int(catalog.civs[u.civId].units[u.unitId].tier)
 			if tier_fx>=3:
 				var glow:=Color(.3,.85,.8,.35) if u.team=="hk" else Color(.85,.25,.45,.35)
 				draw_arc(loc+Vector2(0,2),dims.x*.3,0,TAU,24,glow,2)
 				if attacking:
 					draw_arc(loc+Vector2(0,-dims.y*.4),dims.x*.6,-1.2 if not flip else 1.9,1.2 if not flip else 4.3,16,Color(1,.78,.35,.8),3 if tier_fx==3 else 5)
-		if float(u.hp)<float(u.hpMax) or not beast.is_empty():_bar(loc+Vector2(-dims.x*.26,-dims.y*.88),dims.x*.52,float(u.hp),float(u.hpMax),PixelTheme.JADE if u.team=="hk" else PixelTheme.RED)
-		if attacking:
+		if not dead and (float(u.hp)<float(u.hpMax) or not beast.is_empty()):_bar(loc+Vector2(-dims.x*.26,-dims.y*.88),dims.x*.52,float(u.hp),float(u.hpMax),PixelTheme.JADE if u.team=="hk" else PixelTheme.RED)
+		if attacking and not dead:
 			var attack_pos:=loc+Vector2((-1 if flip else 1)*dims.x*.35,-dims.y*.45)
 			draw_circle(attack_pos,3,PixelTheme.GOLD)
 	for shot in state.get("projectiles",[]):
 		var fraction: float=clampf(float(shot.get("t",0))/maxf(.001,float(shot.get("dur",1))),0,1)
-		var from:=point(float(shot.get("x_from",0)),int(shot.get("fromRow",0)),-45)
-		var to:=point(float(shot.get("x_to",0)),int(shot.get("toRow",0)),-35)
+		var from:=aim_point(float(shot.get("x_from",0)),int(shot.get("fromRow",0)))
+		var to:=aim_point(float(shot.get("x_to",0)),int(shot.get("toRow",0)))
 		var loc:=from.lerp(to,fraction)
 		if float(shot.get("splash",0))>0:loc.y-=sin(fraction*PI)*65
 		draw_line(loc,loc-(to-from).normalized()*11,PixelTheme.GOLD,2)
